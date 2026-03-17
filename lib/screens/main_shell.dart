@@ -44,7 +44,7 @@ class _MainShellState extends State<MainShell> {
                 color: AppTheme.indigo,
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: const Text('H', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+              child: const Text('Q', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
             ),
             const SizedBox(width: 12),
             Text(context.tr('app_name'), style: const TextStyle(fontWeight: FontWeight.bold)),
@@ -96,7 +96,7 @@ class _MainShellState extends State<MainShell> {
                   color: AppTheme.indigo,
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child: const Text('H', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 20)),
+                child: const Text('Q', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 20)),
               ),
               const SizedBox(width: 16),
               Text(

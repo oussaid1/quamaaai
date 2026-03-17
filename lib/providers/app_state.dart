@@ -165,14 +165,14 @@ class AppState extends ChangeNotifier {
           _inventory[invIndex] = InventoryItem(
             id: invItem.id,
             name: invItem.name,
-            quantity: invItem.quantity + 1,
-            unit: invItem.unit,
+            quantity: invItem.quantity + item.quantity,
+            unit: invItem.unit, // Keep inventory unit
           );
         } else {
           _inventory.add(InventoryItem(
             name: item.name,
-            quantity: 1,
-            unit: 'pcs',
+            quantity: item.quantity,
+            unit: item.unit,
           ));
         }
         _saveState('inventory', _inventory);
@@ -243,6 +243,7 @@ class AppState extends ChangeNotifier {
       'shoppingList': _shoppingList,
       'inventory': _inventory,
       'stores': _stores,
+      'monthlyIncome': _monthlyIncome,
     };
     return jsonEncode(data);
   }
@@ -254,11 +255,13 @@ class AppState extends ChangeNotifier {
       if (data.containsKey('shoppingList')) _shoppingList = (data['shoppingList'] as List).map((i) => ShoppingItem.fromJson(i)).toList();
       if (data.containsKey('inventory')) _inventory = (data['inventory'] as List).map((i) => InventoryItem.fromJson(i)).toList();
       if (data.containsKey('stores')) _stores = (data['stores'] as List).map((i) => Store.fromJson(i)).toList();
+      if (data.containsKey('monthlyIncome')) _monthlyIncome = (data['monthlyIncome'] as num).toDouble();
       
       _saveState('expenses', _expenses);
       _saveState('shoppingList', _shoppingList);
       _saveState('inventory', _inventory);
       _saveState('stores', _stores);
+      _saveState('monthlyIncome', _monthlyIncome);
       
       notifyListeners();
     } catch (e) {

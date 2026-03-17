@@ -348,6 +348,7 @@ class DashboardScreen extends StatelessWidget {
                 value: false,
                 onChanged: (_) => appState.toggleShoppingItem(item.id),
                 title: Text(item.name, style: const TextStyle(fontSize: 14)),
+                subtitle: Text('${item.quantity} ${item.unit} • ${item.category}', style: const TextStyle(fontSize: 11, color: AppTheme.textSecondary)),
                 controlAffinity: ListTileControlAffinity.leading,
                 contentPadding: EdgeInsets.zero,
                 dense: true,

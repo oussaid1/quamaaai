@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 class AppTranslations {
   static const Map<String, Map<String, String>> _translations = {
     'en': {
-      'app_name': 'HomeHub',
+      'app_name': 'QuamaaAi',
       'dashboard': 'Dashboard',
       'budget': 'Budget',
       'shopping_list': 'Shopping List',
@@ -45,7 +45,7 @@ class AppTranslations {
       'add_expense': '+ Add Expense',
     },
     'ar': {
-      'app_name': 'هوم هاب',
+      'app_name': 'قاماي',
       'dashboard': 'لوحة القيادة',
       'budget': 'الميزانية',
       'shopping_list': 'قائمة التسوق',

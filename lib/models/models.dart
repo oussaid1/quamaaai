@@ -41,12 +41,16 @@ class ShoppingItem {
   final String name;
   final bool isBought;
   final String category;
+  final double quantity;
+  final String unit;
 
   ShoppingItem({
     String? id,
     required this.name,
     this.isBought = false,
     required this.category,
+    this.quantity = 1.0,
+    this.unit = 'pcs',
   }) : id = id ?? const Uuid().v4();
 
   Map<String, dynamic> toJson() => {
@@ -54,6 +58,8 @@ class ShoppingItem {
     'name': name,
     'isBought': isBought,
     'category': category,
+    'quantity': quantity,
+    'unit': unit,
   };
 
   factory ShoppingItem.fromJson(Map<String, dynamic> json) => ShoppingItem(
@@ -61,6 +67,8 @@ class ShoppingItem {
     name: json['name'],
     isBought: json['isBought'],
     category: json['category'],
+    quantity: (json['quantity'] ?? 1.0).toDouble(),
+    unit: json['unit'] ?? 'pcs',
   );
 }
 

@@ -173,7 +173,15 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
             fontWeight: FontWeight.w500,
           ),
         ),
-        subtitle: Text(item.category, style: const TextStyle(fontSize: 11)),
+        subtitle: Row(
+          children: [
+            Text(item.category, style: const TextStyle(fontSize: 11)),
+            const SizedBox(width: 8),
+            Container(width: 4, height: 4, decoration: const BoxDecoration(color: AppTheme.textSecondary, shape: BoxShape.circle)),
+            const SizedBox(width: 8),
+            Text('${item.quantity} ${item.unit}', style: const TextStyle(fontSize: 11, color: AppTheme.indigo, fontWeight: FontWeight.bold)),
+          ],
+        ),
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -280,34 +288,62 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
 
   void _showAddItemDialog(BuildContext context, AppState appState, {ShoppingItem? existingItem}) {
     final nameController = TextEditingController(text: existingItem?.name);
+    final qtyController = TextEditingController(text: existingItem?.quantity.toString() ?? '1.0');
     String category = existingItem?.category ?? 'GROCERIES';
+    String unit = existingItem?.unit ?? 'pcs';
 
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
         title: Text(existingItem == null ? 'Add Shopping Item' : 'Edit Shopping Item'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(controller: nameController, decoration: const InputDecoration(labelText: 'Item Name')),
-            const SizedBox(height: 16),
-            DropdownButtonFormField<String>(
-              value: category,
-              items: ['GROCERIES', 'HOUSEHOLD', 'PHARMACY', 'OTHER'].map((i) => DropdownMenuItem(value: i, child: Text(i))).toList(),
-              onChanged: (v) => category = v ?? 'OTHER',
-              decoration: const InputDecoration(labelText: 'Category'),
-            ),
-          ],
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(controller: nameController, decoration: const InputDecoration(labelText: 'Item Name')),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: qtyController, 
+                      decoration: const InputDecoration(labelText: 'Qty'),
+                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: DropdownButtonFormField<String>(
+                      value: unit,
+                      items: ['kg', 'g', 'l', 'pcs', 'pack'].map((i) => DropdownMenuItem(value: i, child: Text(i))).toList(),
+                      onChanged: (v) => unit = v ?? 'pcs',
+                      decoration: const InputDecoration(labelText: 'Unit'),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              DropdownButtonFormField<String>(
+                value: category,
+                items: ['GROCERIES', 'HOUSEHOLD', 'PHARMACY', 'OTHER'].map((i) => DropdownMenuItem(value: i, child: Text(i))).toList(),
+                onChanged: (v) => category = v ?? 'OTHER',
+                decoration: const InputDecoration(labelText: 'Category'),
+              ),
+            ],
+          ),
         ),
         actions: [
           TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
           ElevatedButton(
             onPressed: () {
+              final qty = double.tryParse(qtyController.text) ?? 1.0;
               if (nameController.text.isNotEmpty) {
                 if (existingItem == null) {
                   appState.addShoppingItem(ShoppingItem(
                     name: nameController.text,
                     category: category,
+                    quantity: qty,
+                    unit: unit,
                   ));
                 } else {
                   appState.updateShoppingItem(ShoppingItem(
@@ -315,6 +351,8 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
                     name: nameController.text,
                     category: category,
                     isBought: existingItem.isBought,
+                    quantity: qty,
+                    unit: unit,
                   ));
                 }
               }
