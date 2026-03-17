@@ -137,7 +137,15 @@ class _StoresScreenState extends State<StoresScreen> {
                   child: Icon(Icons.store_outlined, color: color, size: 32),
                 ),
                 const SizedBox(width: 16),
-                Expanded(child: Text(store.name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18), overflow: TextOverflow.ellipsis)),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(store.name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18), overflow: TextOverflow.ellipsis),
+                      Text('Limit: \$${store.quota.toStringAsFixed(0)}', style: const TextStyle(color: AppTheme.textSecondary, fontSize: 12)),
+                    ],
+                  ),
+                ),
                 IconButton(
                   icon: const Icon(Icons.delete_outline, size: 20, color: AppTheme.textSecondary),
                   onPressed: () => appState.deleteStore(store.id),
@@ -163,7 +171,8 @@ class _StoresScreenState extends State<StoresScreen> {
 
   void _showAddStoreDialog(BuildContext context, AppState appState, {Store? existingStore}) {
     final nameController = TextEditingController(text: existingStore?.name);
-    final creditController = TextEditingController(text: existingStore?.credit.toString());
+    final creditController = TextEditingController(text: existingStore?.credit.toString() ?? '0.0');
+    final quotaController = TextEditingController(text: existingStore?.quota.toString() ?? '500.0');
 
     showDialog(
       context: context,
@@ -178,6 +187,11 @@ class _StoresScreenState extends State<StoresScreen> {
               decoration: const InputDecoration(labelText: 'Credit/Debt (use - for debt)'),
               keyboardType: const TextInputType.numberWithOptions(signed: true, decimal: true),
             ),
+            TextField(
+              controller: quotaController,
+              decoration: const InputDecoration(labelText: 'Debt Limit (Quota)'),
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            ),
           ],
         ),
         actions: [
@@ -185,11 +199,12 @@ class _StoresScreenState extends State<StoresScreen> {
           ElevatedButton(
             onPressed: () {
               final credit = double.tryParse(creditController.text) ?? 0.0;
+              final quota = double.tryParse(quotaController.text) ?? 500.0;
               if (nameController.text.isNotEmpty) {
                 if (existingStore == null) {
-                  appState.addStore(Store(name: nameController.text, credit: credit));
+                  appState.addStore(Store(name: nameController.text, credit: credit, quota: quota));
                 } else {
-                  appState.updateStore(Store(id: existingStore.id, name: nameController.text, credit: credit));
+                  appState.updateStore(Store(id: existingStore.id, name: nameController.text, credit: credit, quota: quota));
                 }
               }
               Navigator.pop(context);

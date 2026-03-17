@@ -391,9 +391,8 @@ class DashboardScreen extends StatelessWidget {
               )
             else
               ...stores.map((store) {
-                // Mocking quota as 500 for visualization
-                final progress = (store.credit.abs() / 500.0).clamp(0.0, 1.0);
-                return _buildQuotaItem(store.name, progress, store.credit);
+                final progress = (store.credit.abs() / store.quota).clamp(0.0, 1.0);
+                return _buildQuotaItem(store.name, progress, store.credit, store.quota);
               }),
           ],
         ),
@@ -401,7 +400,7 @@ class DashboardScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildQuotaItem(String name, double progress, double credit) {
+  Widget _buildQuotaItem(String name, double progress, double credit, double quota) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 12.0),
       child: Column(
@@ -411,7 +410,7 @@ class DashboardScreen extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(name, style: const TextStyle(fontWeight: FontWeight.bold)),
-              Text(credit >= 0 ? 'Credit: \$${credit.toStringAsFixed(2)}' : 'Debt: \$${credit.abs().toStringAsFixed(2)}', 
+              Text(credit >= 0 ? 'Credit: \$${credit.toStringAsFixed(2)}' : 'Debt: \$${credit.abs().toStringAsFixed(2)} / \$${quota.toStringAsFixed(0)}', 
                    style: const TextStyle(color: AppTheme.textSecondary, fontSize: 12)),
             ],
           ),
