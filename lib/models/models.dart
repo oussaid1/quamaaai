@@ -96,22 +96,26 @@ class Store {
   final String id;
   final String name;
   final double credit;
+  final double quota;
 
   Store({
     String? id,
     required this.name,
     required this.credit,
+    this.quota = 500.0,
   }) : id = id ?? const Uuid().v4();
 
   Map<String, dynamic> toJson() => {
     'id': id,
     'name': name,
     'credit': credit,
+    'quota': quota,
   };
 
   factory Store.fromJson(Map<String, dynamic> json) => Store(
     id: json['id'],
     name: json['name'],
     credit: json['credit'],
+    quota: json['quota'] ?? 500.0,
   );
 }

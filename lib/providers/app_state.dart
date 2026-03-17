@@ -135,6 +135,15 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
+  void updateShoppingItem(ShoppingItem item) {
+    final index = _shoppingList.indexWhere((i) => i.id == item.id);
+    if (index != -1) {
+      _shoppingList[index] = item;
+      _saveState('shoppingList', _shoppingList);
+      notifyListeners();
+    }
+  }
+
   void toggleShoppingItem(String id) {
     final index = _shoppingList.indexWhere((i) => i.id == id);
     if (index != -1) {

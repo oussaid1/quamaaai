@@ -287,25 +287,34 @@ class _BudgetScreenState extends State<BudgetScreen> {
         DataCell(Text(expense.storeName ?? '-', style: const TextStyle(color: AppTheme.textSecondary))),
         DataCell(Text(currencyFormat.format(expense.amount), style: const TextStyle(fontWeight: FontWeight.w600))),
         DataCell(
-          IconButton(
-            icon: const Icon(Icons.delete_outline, color: AppTheme.rose, size: 20),
-            onPressed: () => _showDeleteConfirmation(context, appState, expense),
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              IconButton(
+                icon: const Icon(Icons.edit_outlined, size: 20, color: AppTheme.indigo),
+                onPressed: () => _showAddExpenseDialog(context, appState, existingExpense: expense),
+              ),
+              IconButton(
+                icon: const Icon(Icons.delete_outline, color: AppTheme.rose, size: 20),
+                onPressed: () => _showDeleteConfirmation(context, appState, expense),
+              ),
+            ],
           ),
         ),
       ],
     );
   }
 
-  void _showAddExpenseDialog(BuildContext context, AppState appState) {
-    final descController = TextEditingController();
-    final amountController = TextEditingController();
-    String category = 'OTHER';
-    String? storeName;
+  void _showAddExpenseDialog(BuildContext context, AppState appState, {Expense? existingExpense}) {
+    final descController = TextEditingController(text: existingExpense?.description);
+    final amountController = TextEditingController(text: existingExpense?.amount.toString());
+    String category = existingExpense?.category ?? 'OTHER';
+    String? storeName = existingExpense?.storeName;
 
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Add Expense'),
+        title: Text(existingExpense == null ? 'Add Expense' : 'Edit Expense'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -333,17 +342,28 @@ class _BudgetScreenState extends State<BudgetScreen> {
             onPressed: () {
               final amount = double.tryParse(amountController.text) ?? 0.0;
               if (descController.text.isNotEmpty && amount > 0) {
-                appState.addExpense(Expense(
-                  description: descController.text,
-                  amount: amount,
-                  category: category,
-                  storeName: storeName,
-                  date: DateTime.now(),
-                ));
+                if (existingExpense == null) {
+                  appState.addExpense(Expense(
+                    description: descController.text,
+                    amount: amount,
+                    category: category,
+                    storeName: storeName,
+                    date: DateTime.now(),
+                  ));
+                } else {
+                  appState.updateExpense(Expense(
+                    id: existingExpense.id,
+                    description: descController.text,
+                    amount: amount,
+                    category: category,
+                    storeName: storeName,
+                    date: existingExpense.date,
+                  ));
+                }
               }
               Navigator.pop(context);
             },
-            child: const Text('Add'),
+            child: Text(existingExpense == null ? 'Add' : 'Save'),
           ),
         ],
       ),

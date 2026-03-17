@@ -80,7 +80,7 @@ class DashboardScreen extends StatelessWidget {
 
   Widget _buildBudgetCard(BuildContext context, AppState appState) {
     final totalSpent = appState.expenses.fold<double>(0, (sum, e) => sum + e.amount);
-    final income = 5000.0;
+    final income = appState.monthlyIncome;
     final remaining = income - totalSpent;
     final percentage = (totalSpent / income).clamp(0.0, 1.0);
     final currencyFormat = NumberFormat.simpleCurrency();

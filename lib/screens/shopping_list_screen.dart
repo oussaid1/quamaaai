@@ -174,9 +174,18 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
           ),
         ),
         subtitle: Text(item.category, style: const TextStyle(fontSize: 11)),
-        trailing: IconButton(
-          icon: const Icon(Icons.delete_outline, color: AppTheme.rose, size: 20),
-          onPressed: () => appState.deleteShoppingItem(item.id),
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            IconButton(
+              icon: const Icon(Icons.edit_outlined, size: 20, color: AppTheme.indigo),
+              onPressed: () => _showAddItemDialog(context, appState, existingItem: item),
+            ),
+            IconButton(
+              icon: const Icon(Icons.delete_outline, color: AppTheme.rose, size: 20),
+              onPressed: () => appState.deleteShoppingItem(item.id),
+            ),
+          ],
         ),
       ),
     );
@@ -269,14 +278,14 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
     );
   }
 
-  void _showAddItemDialog(BuildContext context, AppState appState) {
-    final nameController = TextEditingController();
-    String category = 'GROCERIES';
+  void _showAddItemDialog(BuildContext context, AppState appState, {ShoppingItem? existingItem}) {
+    final nameController = TextEditingController(text: existingItem?.name);
+    String category = existingItem?.category ?? 'GROCERIES';
 
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Add Shopping Item'),
+        title: Text(existingItem == null ? 'Add Shopping Item' : 'Edit Shopping Item'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -295,15 +304,24 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
           ElevatedButton(
             onPressed: () {
               if (nameController.text.isNotEmpty) {
-                appState.addShoppingItem(ShoppingItem(
-                  name: nameController.text,
-                  category: category,
-                ));
+                if (existingItem == null) {
+                  appState.addShoppingItem(ShoppingItem(
+                    name: nameController.text,
+                    category: category,
+                  ));
+                } else {
+                  appState.updateShoppingItem(ShoppingItem(
+                    id: existingItem.id,
+                    name: nameController.text,
+                    category: category,
+                    isBought: existingItem.isBought,
+                  ));
+                }
               }
               Navigator.pop(context);
             },
             style: ElevatedButton.styleFrom(backgroundColor: AppTheme.amber),
-            child: const Text('Add'),
+            child: Text(existingItem == null ? 'Add' : 'Save'),
           ),
         ],
       ),
