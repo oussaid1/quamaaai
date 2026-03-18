@@ -4,6 +4,7 @@ import '../l10n/translations.dart';
 import '../theme/app_theme.dart';
 import '../providers/app_state.dart';
 import 'package:intl/intl.dart';
+import 'main_shell.dart';
 
 class DashboardScreen extends StatelessWidget {
   const DashboardScreen({super.key});
@@ -82,115 +83,123 @@ class DashboardScreen extends StatelessWidget {
     final totalSpent = appState.expenses.fold<double>(0, (sum, e) => sum + e.amount);
     final income = appState.monthlyIncome;
     final remaining = income - totalSpent;
-    final percentage = (totalSpent / income).clamp(0.0, 1.0);
+    final percentage = (income > 0 ? (totalSpent / income) : 0.0).clamp(0.0, 1.0);
     final currencyFormat = NumberFormat.simpleCurrency();
 
     return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(24.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: AppTheme.emeraldLight.withOpacity(0.5),
-                    borderRadius: BorderRadius.circular(8),
+      child: InkWell(
+        onTap: () => MainShell.of(context)?.setIndex(1), // Budget
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: AppTheme.emeraldLight.withOpacity(0.5),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Icon(Icons.trending_up, color: AppTheme.emerald),
                   ),
-                  child: const Icon(Icons.trending_up, color: AppTheme.emerald),
-                ),
-                const Icon(Icons.arrow_forward, color: AppTheme.textSecondary, size: 20),
-              ],
-            ),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  context.tr('remaining_budget'),
-                  style: const TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                    color: AppTheme.textSecondary,
-                    letterSpacing: 1.2,
+                  const Icon(Icons.arrow_forward, color: AppTheme.textSecondary, size: 20),
+                ],
+              ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    context.tr('remaining_budget'),
+                    style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      color: AppTheme.textSecondary,
+                      letterSpacing: 1.2,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  currencyFormat.format(remaining),
-                  style: TextStyle(
-                    fontSize: 28,
-                    fontWeight: FontWeight.bold,
-                    color: remaining < 0 ? AppTheme.rose : AppTheme.textPrimary,
+                  const SizedBox(height: 4),
+                  Text(
+                    currencyFormat.format(remaining),
+                    style: TextStyle(
+                      fontSize: 28,
+                      fontWeight: FontWeight.bold,
+                      color: remaining < 0 ? AppTheme.rose : AppTheme.textPrimary,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 12),
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(4),
-                  child: LinearProgressIndicator(
-                    value: percentage, 
-                    backgroundColor: AppTheme.border.withOpacity(0.5),
-                    valueColor: AlwaysStoppedAnimation<Color>(percentage > 0.9 ? AppTheme.rose : AppTheme.emerald),
-                    minHeight: 8,
+                  const SizedBox(height: 12),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(4),
+                    child: LinearProgressIndicator(
+                      value: percentage, 
+                      backgroundColor: AppTheme.border.withOpacity(0.5),
+                      valueColor: AlwaysStoppedAnimation<Color>(percentage > 0.9 ? AppTheme.rose : AppTheme.emerald),
+                      minHeight: 8,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 8),
-                Text('${(percentage * 100).toStringAsFixed(1)}% spent of ${currencyFormat.format(income)}', style: const TextStyle(fontSize: 12, color: AppTheme.textSecondary)),
-              ],
-            ),
-          ],
+                  const SizedBox(height: 8),
+                  Text('${(percentage * 100).toStringAsFixed(1)}% ${context.tr('spent')} ${context.tr('of')} ${currencyFormat.format(income)}', style: const TextStyle(fontSize: 12, color: AppTheme.textSecondary)),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 
   Widget _buildAlertsCard(BuildContext context, AppState appState) {
-    final outOfStockCount = appState.inventory.where((i) => i.quantity <= 0).length;
-    final lowStockCount = appState.inventory.where((i) => i.quantity > 0 && i.quantity < 2).length;
+    final expiringSoonCount = appState.inventory.where((i) => !i.isConsumed && i.isExpiringSoon).length;
+    final expiredCount = appState.inventory.where((i) => !i.isConsumed && i.isExpired).length;
 
     return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(24.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: AppTheme.amberLight.withOpacity(0.5),
-                    borderRadius: BorderRadius.circular(8),
+      child: InkWell(
+        onTap: () => MainShell.of(context)?.setIndex(3), // Inventory
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: AppTheme.amberLight.withOpacity(0.5),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Icon(Icons.warning_amber_rounded, color: AppTheme.amber),
                   ),
-                  child: const Icon(Icons.warning_amber_rounded, color: AppTheme.amber),
-                ),
-                const Icon(Icons.arrow_forward, color: AppTheme.textSecondary, size: 20),
-              ],
-            ),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  context.tr('kitchen_alerts'),
-                  style: const TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                    color: AppTheme.textSecondary,
-                    letterSpacing: 1.2,
+                  const Icon(Icons.arrow_forward, color: AppTheme.textSecondary, size: 20),
+                ],
+              ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    context.tr('kitchen_alerts'),
+                    style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      color: AppTheme.textSecondary,
+                      letterSpacing: 1.2,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 12),
-                _buildAlertRow('Low Stock', lowStockCount.toString(), AppTheme.amberLight, AppTheme.amber),
-                const SizedBox(height: 8),
-                _buildAlertRow(context.tr('out_of_stock'), outOfStockCount.toString(), AppTheme.roseLight, AppTheme.rose),
-              ],
-            ),
-          ],
+                  const SizedBox(height: 12),
+                  _buildAlertRow(context.tr('ending_soon'), expiringSoonCount.toString(), AppTheme.amberLight, AppTheme.amber),
+                  const SizedBox(height: 8),
+                  _buildAlertRow(context.tr('expired'), expiredCount.toString(), AppTheme.roseLight, AppTheme.rose),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -234,52 +243,56 @@ class DashboardScreen extends StatelessWidget {
     final currencyFormat = NumberFormat.simpleCurrency();
 
     return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(24.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: AppTheme.indigoLight.withOpacity(0.5),
-                    borderRadius: BorderRadius.circular(8),
+      child: InkWell(
+        onTap: () => MainShell.of(context)?.setIndex(4), // Stores
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: AppTheme.indigoLight.withOpacity(0.5),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Icon(Icons.store_outlined, color: AppTheme.indigo),
                   ),
-                  child: const Icon(Icons.store_outlined, color: AppTheme.indigo),
-                ),
-                const Icon(Icons.arrow_forward, color: AppTheme.textSecondary, size: 20),
-              ],
-            ),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  context.tr('total_store_credit'),
-                  style: const TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                    color: AppTheme.textSecondary,
-                    letterSpacing: 1.2,
+                  const Icon(Icons.arrow_forward, color: AppTheme.textSecondary, size: 20),
+                ],
+              ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    context.tr('total_store_credit'),
+                    style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      color: AppTheme.textSecondary,
+                      letterSpacing: 1.2,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  currencyFormat.format(totalCredit),
-                  style: TextStyle(
-                    fontSize: 28,
-                    fontWeight: FontWeight.bold,
-                    color: totalCredit >= 0 ? AppTheme.emerald : AppTheme.rose,
+                  const SizedBox(height: 4),
+                  Text(
+                    currencyFormat.format(totalCredit),
+                    style: TextStyle(
+                      fontSize: 28,
+                      fontWeight: FontWeight.bold,
+                      color: totalCredit >= 0 ? AppTheme.emerald : AppTheme.rose,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 8),
-                Text('${stores.length} ${context.tr('across_stores')}', style: const TextStyle(fontSize: 12, color: AppTheme.textSecondary)),
-              ],
-            ),
-          ],
+                  const SizedBox(height: 8),
+                  Text('${stores.length} ${context.tr('across_stores')}', style: const TextStyle(fontSize: 12, color: AppTheme.textSecondary)),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -330,7 +343,7 @@ class DashboardScreen extends StatelessWidget {
                   ],
                 ),
                 TextButton(
-                  onPressed: () {}, // Handled by shell navigation usually
+                  onPressed: () => MainShell.of(context)?.setIndex(2),
                   child: Text(context.tr('view_all'), style: const TextStyle(color: AppTheme.indigo)),
                 ),
               ],
@@ -345,7 +358,7 @@ class DashboardScreen extends StatelessWidget {
               )
             else
               ...items.map((item) => CheckboxListTile(
-                value: false,
+                value: item.isBought,
                 onChanged: (_) => appState.toggleShoppingItem(item.id),
                 title: Text(item.name, style: const TextStyle(fontSize: 14)),
                 subtitle: Text('${item.quantity} ${item.unit} • ${item.category}', style: const TextStyle(fontSize: 11, color: AppTheme.textSecondary)),
@@ -379,21 +392,22 @@ class DashboardScreen extends StatelessWidget {
                   ],
                 ),
                 TextButton(
-                  onPressed: () {},
+                  onPressed: () => MainShell.of(context)?.setIndex(4),
                   child: Text(context.tr('view_all'), style: const TextStyle(color: AppTheme.indigo)),
                 ),
               ],
             ),
             const Divider(),
             if (stores.isEmpty)
-              const Padding(
-                padding: EdgeInsets.symmetric(vertical: 32.0),
-                child: Center(child: Text('No store data.', style: TextStyle(color: AppTheme.textSecondary, fontStyle: FontStyle.italic))),
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 32.0),
+                child: Center(child: Text(context.tr('no_store_data'), style: const TextStyle(color: AppTheme.textSecondary, fontStyle: FontStyle.italic))),
               )
             else
               ...stores.map((store) {
-                final progress = (store.credit.abs() / store.quota).clamp(0.0, 1.0);
-                return _buildQuotaItem(store.name, progress, store.credit, store.quota);
+                // Fixed: Use monthlyQuota instead of the deprecated quota getter
+                final progress = (store.monthlyQuota > 0 ? (store.credit.abs() / store.monthlyQuota) : 0.0).clamp(0.0, 1.0);
+                return _buildQuotaItem(context, store.name, progress, store.credit, store.monthlyQuota);
               }),
           ],
         ),
@@ -401,7 +415,7 @@ class DashboardScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildQuotaItem(String name, double progress, double credit, double quota) {
+  Widget _buildQuotaItem(BuildContext context, String name, double progress, double credit, double quota) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 12.0),
       child: Column(
@@ -411,7 +425,7 @@ class DashboardScreen extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(name, style: const TextStyle(fontWeight: FontWeight.bold)),
-              Text(credit >= 0 ? 'Credit: \$${credit.toStringAsFixed(2)}' : 'Debt: \$${credit.abs().toStringAsFixed(2)} / \$${quota.toStringAsFixed(0)}', 
+              Text(credit >= 0 ? '${context.tr('credit')}: \$${credit.toStringAsFixed(2)}' : '${context.tr('debt')}: \$${credit.abs().toStringAsFixed(2)} / \$${quota.toStringAsFixed(0)}',
                    style: const TextStyle(color: AppTheme.textSecondary, fontSize: 12)),
             ],
           ),
@@ -430,4 +444,3 @@ class DashboardScreen extends StatelessWidget {
     );
   }
 }
-

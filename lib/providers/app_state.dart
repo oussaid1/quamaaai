@@ -1,6 +1,9 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:google_sign_in/google_sign_in.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/models.dart';
 
 class AppState extends ChangeNotifier {
@@ -14,6 +17,11 @@ class AppState extends ChangeNotifier {
   bool _autoAddToInventory = false;
   double _monthlyIncome = 5000.0;
 
+  User? _user;
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final GoogleSignIn _googleSignIn = GoogleSignIn();
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+
   Locale get locale => _locale;
   ThemeMode get themeMode => _themeMode;
   List<Expense> get expenses => _expenses;
@@ -22,21 +30,118 @@ class AppState extends ChangeNotifier {
   List<Store> get stores => _stores;
   bool get autoAddToInventory => _autoAddToInventory;
   double get monthlyIncome => _monthlyIncome;
+  User? get user => _user;
 
   AppState() {
-    _loadState();
+    _auth.authStateChanges().listen((User? user) async {
+      _user = user;
+      if (user != null) {
+        await _loadRemoteState();
+      } else {
+        await _loadLocalState();
+      }
+      _checkAndSeedShafeiData();
+      notifyListeners();
+    });
+  }
+
+  void _checkAndSeedShafeiData() {
+    const String shopName = "الشافعي";
+    
+    // Add Store if not exists
+    if (!_stores.any((s) => s.name == shopName)) {
+      _stores.add(Store(
+        name: shopName,
+        credit: 0.0,
+        dailyQuota: 2000.0,
+        weeklyQuota: 10000.0,
+        monthlyQuota: 30000.0,
+      ));
+    }
+
+    final List<Map<String, dynamic>> rawData = [
+      {
+        "Name": "تقاشر",
+        "Quantity": 3.0,
+        "Price": 200.0,
+        "Date": 1768486362
+      },
+      {
+        "Name": "بودي داخلي",
+        "Quantity": 2.0,
+        "Price": 800.0,
+        "Date": 1768486373
+      },
+      {
+        "Name": "سروال قندريسي",
+        "Quantity": 2.0,
+        "Price": 2400.0,
+        "Date": 1768486345
+      }
+    ];
+
+    for (var data in rawData) {
+      final String name = data["Name"];
+      final double qty = data["Quantity"];
+      final double price = data["Price"];
+      final DateTime date = DateTime.fromMillisecondsSinceEpoch(data["Date"] * 1000);
+
+      // Add to Expenses if not already there
+      if (!_expenses.any((e) => e.description == name && e.storeName == shopName)) {
+        _expenses.add(Expense(
+          description: name,
+          amount: qty * price,
+          category: "SHOPPING",
+          storeName: shopName,
+          date: date,
+        ));
+      }
+
+      // Add to Shopping List as bought if not there
+      if (!_shoppingList.any((i) => i.name == name && i.storeName == shopName)) {
+        _shoppingList.add(ShoppingItem(
+          name: name,
+          isBought: true,
+          category: "CLOTHES",
+          quantity: qty,
+          unit: "pcs",
+          price: price,
+          storeName: shopName,
+        ));
+      }
+    }
+    
+    _saveState();
+  }
+
+  // --- Auth ---
+
+  Future<void> signInWithGoogle() async {
+    final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
+    if (googleUser == null) return;
+
+    final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+    final AuthCredential credential = GoogleAuthProvider.credential(
+      accessToken: googleAuth.accessToken,
+      idToken: googleAuth.idToken,
+    );
+
+    await _auth.signInWithCredential(credential);
+  }
+
+  Future<void> signOut() async {
+    await _googleSignIn.signOut();
+    await _auth.signOut();
   }
 
   // --- Persistence ---
 
-  Future<void> _loadState() async {
+  Future<void> _loadLocalState() async {
     final prefs = await SharedPreferences.getInstance();
     
-    // Load Locale
     final String? languageCode = prefs.getString('languageCode');
     if (languageCode != null) _locale = Locale(languageCode);
 
-    // Load ThemeMode
     final String? themeStr = prefs.getString('themeMode');
     if (themeStr != null) {
       _themeMode = ThemeMode.values.firstWhere((e) => e.toString() == themeStr, orElse: () => ThemeMode.system);
@@ -45,13 +150,41 @@ class AppState extends ChangeNotifier {
     _autoAddToInventory = prefs.getBool('autoAddToInventory') ?? false;
     _monthlyIncome = prefs.getDouble('monthlyIncome') ?? 5000.0;
 
-    // Load Data
     _expenses = _loadList(prefs, 'expenses', (m) => Expense.fromJson(m));
     _shoppingList = _loadList(prefs, 'shoppingList', (m) => ShoppingItem.fromJson(m));
     _inventory = _loadList(prefs, 'inventory', (m) => InventoryItem.fromJson(m));
     _stores = _loadList(prefs, 'stores', (m) => Store.fromJson(m));
+  }
 
-    notifyListeners();
+  Future<void> _loadRemoteState() async {
+    if (_user == null) return;
+    
+    final doc = await _firestore.collection('users').doc(_user!.uid).get();
+    if (doc.exists) {
+      final data = doc.data()!;
+      _autoAddToInventory = data['autoAddToInventory'] ?? false;
+      _monthlyIncome = (data['monthlyIncome'] ?? 5000.0).toDouble();
+      
+      final List<dynamic> expJson = data['expenses'] ?? [];
+      _expenses = expJson.map((item) => Expense.fromJson(item as Map<String, dynamic>)).toList();
+      
+      final List<dynamic> shopJson = data['shoppingList'] ?? [];
+      _shoppingList = shopJson.map((item) => ShoppingItem.fromJson(item as Map<String, dynamic>)).toList();
+      
+      final List<dynamic> invJson = data['inventory'] ?? [];
+      _inventory = invJson.map((item) => InventoryItem.fromJson(item as Map<String, dynamic>)).toList();
+      
+      final List<dynamic> storeJson = data['stores'] ?? [];
+      _stores = storeJson.map((item) => Store.fromJson(item as Map<String, dynamic>)).toList();
+    }
+    
+    final prefs = await SharedPreferences.getInstance();
+    final String? languageCode = prefs.getString('languageCode');
+    if (languageCode != null) _locale = Locale(languageCode);
+    final String? themeStr = prefs.getString('themeMode');
+    if (themeStr != null) {
+      _themeMode = ThemeMode.values.firstWhere((e) => e.toString() == themeStr, orElse: () => ThemeMode.system);
+    }
   }
 
   List<T> _loadList<T>(SharedPreferences prefs, String key, T Function(Map<String, dynamic>) fromJson) {
@@ -65,14 +198,24 @@ class AppState extends ChangeNotifier {
     }
   }
 
-  Future<void> _saveState(String key, dynamic data) async {
-    final prefs = await SharedPreferences.getInstance();
-    if (data is bool) {
-      await prefs.setBool(key, data);
-    } else if (data is double) {
-      await prefs.setDouble(key, data);
+  Future<void> _saveState() async {
+    if (_user != null) {
+      await _firestore.collection('users').doc(_user!.uid).set({
+        'autoAddToInventory': _autoAddToInventory,
+        'monthlyIncome': _monthlyIncome,
+        'expenses': _expenses.map((e) => e.toJson()).toList(),
+        'shoppingList': _shoppingList.map((i) => i.toJson()).toList(),
+        'inventory': _inventory.map((i) => i.toJson()).toList(),
+        'stores': _stores.map((s) => s.toJson()).toList(),
+      }, SetOptions(merge: true));
     } else {
-      await prefs.setString(key, jsonEncode(data));
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool('autoAddToInventory', _autoAddToInventory);
+      await prefs.setDouble('monthlyIncome', _monthlyIncome);
+      await prefs.setString('expenses', jsonEncode(_expenses.map((e) => e.toJson()).toList()));
+      await prefs.setString('shoppingList', jsonEncode(_shoppingList.map((i) => i.toJson()).toList()));
+      await prefs.setString('inventory', jsonEncode(_inventory.map((i) => i.toJson()).toList()));
+      await prefs.setString('stores', jsonEncode(_stores.map((s) => s.toJson()).toList()));
     }
   }
 
@@ -80,13 +223,13 @@ class AppState extends ChangeNotifier {
 
   Future<void> setAutoAddToInventory(bool value) async {
     _autoAddToInventory = value;
-    _saveState('autoAddToInventory', value);
+    await _saveState();
     notifyListeners();
   }
 
   Future<void> setMonthlyIncome(double value) async {
     _monthlyIncome = value;
-    _saveState('monthlyIncome', value);
+    await _saveState();
     notifyListeners();
   }
 
@@ -108,7 +251,7 @@ class AppState extends ChangeNotifier {
 
   void addExpense(Expense expense) {
     _expenses.add(expense);
-    _saveState('expenses', _expenses);
+    _saveState();
     notifyListeners();
   }
 
@@ -116,14 +259,14 @@ class AppState extends ChangeNotifier {
     final index = _expenses.indexWhere((e) => e.id == expense.id);
     if (index != -1) {
       _expenses[index] = expense;
-      _saveState('expenses', _expenses);
+      _saveState();
       notifyListeners();
     }
   }
 
   void deleteExpense(String id) {
     _expenses.removeWhere((e) => e.id == id);
-    _saveState('expenses', _expenses);
+    _saveState();
     notifyListeners();
   }
 
@@ -131,7 +274,7 @@ class AppState extends ChangeNotifier {
 
   void addShoppingItem(ShoppingItem item) {
     _shoppingList.add(item);
-    _saveState('shoppingList', _shoppingList);
+    _saveState();
     notifyListeners();
   }
 
@@ -139,53 +282,59 @@ class AppState extends ChangeNotifier {
     final index = _shoppingList.indexWhere((i) => i.id == item.id);
     if (index != -1) {
       _shoppingList[index] = item;
-      _saveState('shoppingList', _shoppingList);
+      _saveState();
       notifyListeners();
     }
   }
 
-  void toggleShoppingItem(String id) {
+  void toggleShoppingItem(String id, {DateTime? expiryDate, String? storeName}) {
     final index = _shoppingList.indexWhere((i) => i.id == id);
     if (index != -1) {
       final item = _shoppingList[index];
       final newBoughtState = !item.isBought;
       
-      _shoppingList[index] = ShoppingItem(
-        id: item.id,
-        name: item.name,
-        category: item.category,
+      _shoppingList[index] = item.copyWith(
         isBought: newBoughtState,
+        storeName: storeName ?? item.storeName,
       );
 
-      // Automation: Add to inventory if enabled and marked as bought
-      if (_autoAddToInventory && newBoughtState) {
-        final invIndex = _inventory.indexWhere((inv) => inv.name.toLowerCase() == item.name.toLowerCase());
-        if (invIndex != -1) {
-          final invItem = _inventory[invIndex];
-          _inventory[invIndex] = InventoryItem(
-            id: invItem.id,
-            name: invItem.name,
-            quantity: invItem.quantity + item.quantity,
-            unit: invItem.unit, // Keep inventory unit
-          );
-        } else {
-          _inventory.add(InventoryItem(
-            name: item.name,
-            quantity: item.quantity,
-            unit: item.unit,
-          ));
+      if (newBoughtState) {
+        // Record as expense when bought
+        addExpense(Expense(
+          description: item.name,
+          amount: item.total,
+          category: item.category,
+          storeName: storeName ?? item.storeName,
+          date: DateTime.now(),
+        ));
+
+        if (_autoAddToInventory) {
+          final invIndex = _inventory.indexWhere((inv) => inv.name.toLowerCase() == item.name.toLowerCase());
+          if (invIndex != -1) {
+            final invItem = _inventory[invIndex];
+            _inventory[invIndex] = invItem.copyWith(
+              quantity: invItem.quantity + item.quantity,
+              expiryDate: expiryDate ?? invItem.expiryDate,
+            );
+          } else {
+            _inventory.add(InventoryItem(
+              name: item.name,
+              quantity: item.quantity,
+              unit: item.unit,
+              expiryDate: expiryDate,
+            ));
+          }
         }
-        _saveState('inventory', _inventory);
       }
 
-      _saveState('shoppingList', _shoppingList);
+      _saveState();
       notifyListeners();
     }
   }
 
   void deleteShoppingItem(String id) {
     _shoppingList.removeWhere((i) => i.id == id);
-    _saveState('shoppingList', _shoppingList);
+    _saveState();
     notifyListeners();
   }
 
@@ -193,7 +342,7 @@ class AppState extends ChangeNotifier {
 
   void addInventoryItem(InventoryItem item) {
     _inventory.add(item);
-    _saveState('inventory', _inventory);
+    _saveState();
     notifyListeners();
   }
 
@@ -201,14 +350,23 @@ class AppState extends ChangeNotifier {
     final index = _inventory.indexWhere((i) => i.id == item.id);
     if (index != -1) {
       _inventory[index] = item;
-      _saveState('inventory', _inventory);
+      _saveState();
+      notifyListeners();
+    }
+  }
+
+  void toggleConsumed(String id) {
+    final index = _inventory.indexWhere((i) => i.id == id);
+    if (index != -1) {
+      _inventory[index] = _inventory[index].copyWith(isConsumed: !_inventory[index].isConsumed);
+      _saveState();
       notifyListeners();
     }
   }
 
   void deleteInventoryItem(String id) {
     _inventory.removeWhere((i) => i.id == id);
-    _saveState('inventory', _inventory);
+    _saveState();
     notifyListeners();
   }
 
@@ -216,7 +374,7 @@ class AppState extends ChangeNotifier {
 
   void addStore(Store store) {
     _stores.add(store);
-    _saveState('stores', _stores);
+    _saveState();
     notifyListeners();
   }
 
@@ -224,14 +382,14 @@ class AppState extends ChangeNotifier {
     final index = _stores.indexWhere((s) => s.id == store.id);
     if (index != -1) {
       _stores[index] = store;
-      _saveState('stores', _stores);
+      _saveState();
       notifyListeners();
     }
   }
 
   void deleteStore(String id) {
     _stores.removeWhere((s) => s.id == id);
-    _saveState('stores', _stores);
+    _saveState();
     notifyListeners();
   }
 
@@ -239,10 +397,10 @@ class AppState extends ChangeNotifier {
 
   String exportData() {
     final Map<String, dynamic> data = {
-      'expenses': _expenses,
-      'shoppingList': _shoppingList,
-      'inventory': _inventory,
-      'stores': _stores,
+      'expenses': _expenses.map((e) => e.toJson()).toList(),
+      'shoppingList': _shoppingList.map((i) => i.toJson()).toList(),
+      'inventory': _inventory.map((i) => i.toJson()).toList(),
+      'stores': _stores.map((s) => s.toJson()).toList(),
       'monthlyIncome': _monthlyIncome,
     };
     return jsonEncode(data);
@@ -257,16 +415,10 @@ class AppState extends ChangeNotifier {
       if (data.containsKey('stores')) _stores = (data['stores'] as List).map((i) => Store.fromJson(i)).toList();
       if (data.containsKey('monthlyIncome')) _monthlyIncome = (data['monthlyIncome'] as num).toDouble();
       
-      _saveState('expenses', _expenses);
-      _saveState('shoppingList', _shoppingList);
-      _saveState('inventory', _inventory);
-      _saveState('stores', _stores);
-      _saveState('monthlyIncome', _monthlyIncome);
-      
+      await _saveState();
       notifyListeners();
     } catch (e) {
       debugPrint('Import error: $e');
     }
   }
 }
-

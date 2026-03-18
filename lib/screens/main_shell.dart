@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../l10n/translations.dart';
 import '../theme/app_theme.dart';
+import '../providers/app_state.dart';
 import 'dashboard_screen.dart';
 import 'budget_screen.dart';
 import 'shopping_list_screen.dart';
@@ -11,6 +13,8 @@ import 'settings_screen.dart';
 
 class MainShell extends StatefulWidget {
   const MainShell({super.key});
+
+  static _MainShellState? of(BuildContext context) => context.findAncestorStateOfType<_MainShellState>();
 
   @override
   State<MainShell> createState() => _MainShellState();
@@ -28,6 +32,12 @@ class _MainShellState extends State<MainShell> {
     const StatisticsScreen(),
     const SettingsScreen(),
   ];
+
+  void setIndex(int index) {
+    setState(() {
+      _selectedIndex = index;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -81,6 +91,8 @@ class _MainShellState extends State<MainShell> {
   }
 
   Widget _buildSidebarContent(BuildContext context) {
+    final appState = Provider.of<AppState>(context, listen: false);
+    
     return Column(
       children: [
         // Header
@@ -131,9 +143,7 @@ class _MainShellState extends State<MainShell> {
         Padding(
           padding: const EdgeInsets.all(16.0),
           child: InkWell(
-            onTap: () {
-              // TODO: Implement logout
-            },
+            onTap: () => appState.signOut(),
             borderRadius: BorderRadius.circular(8),
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -164,9 +174,7 @@ class _MainShellState extends State<MainShell> {
       padding: const EdgeInsets.only(bottom: 8.0),
       child: InkWell(
         onTap: () {
-          setState(() {
-            _selectedIndex = index;
-          });
+          setIndex(index);
           // Close drawer if on mobile
           if (MediaQuery.of(context).size.width < 800) {
             Navigator.pop(context);

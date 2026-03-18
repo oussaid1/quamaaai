@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "892082206338",
+    "project_id": "quamaaai",
+    "storage_bucket": "quamaaai.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:892082206338:android:feff4b00d4459f6d79e69b",
+        "android_client_info": {
+          "package_name": "com.example.quamaa"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "892082206338-rqsg9iustfpm5dlo842doqa7q7rdsgrm.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.quamaa",
+            "certificate_hash": "259a30a53f03c0ba8efde1e86581de3a03aabbfc"
+          }
+        },
+        {
+          "client_id": "892082206338-vla11njkramsn173fl1rfr3ul06ja6sk.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB_t0x3LWkX_FuMmDKIPUW7VjCjqxk3nAk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "892082206338-vla11njkramsn173fl1rfr3ul06ja6sk.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

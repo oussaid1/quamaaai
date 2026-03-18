@@ -8,7 +8,7 @@
 PRODUCT_NAME = quamaaai
 
 // The application's bundle identifier
-PRODUCT_BUNDLE_IDENTIFIER = com.example.quamaaai
+PRODUCT_BUNDLE_IDENTIFIER = com.devbourheem.quamaai
 
 // The copyright displayed in application information
-PRODUCT_COPYRIGHT = Copyright © 2026 com.example. All rights reserved.
+PRODUCT_COPYRIGHT = Copyright © 2026 com.devbourheem. All rights reserved.

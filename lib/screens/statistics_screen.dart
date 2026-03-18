@@ -33,6 +33,8 @@ class StatisticsScreen extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          Text(context.tr('statistics'), style: Theme.of(context).textTheme.headlineMedium),
+          const SizedBox(height: 32),
           LayoutBuilder(
             builder: (context, constraints) {
               if (constraints.maxWidth > 900) {
@@ -77,7 +79,7 @@ class StatisticsScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Spending by Category', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+            Text(context.tr('category'), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
             const SizedBox(height: 32),
             SizedBox(
               height: 250,
@@ -141,7 +143,7 @@ class StatisticsScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Last 7 Days Spending', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+            const Text('Last 7 Days', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
             const SizedBox(height: 32),
             SizedBox(
               height: 250,
@@ -204,7 +206,7 @@ class StatisticsScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Spending by Store', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+            Text(context.tr('stores'), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
             const SizedBox(height: 32),
             ...storeSums.entries.map((entry) => _buildStoreBar(entry.key, entry.value / maxVal, entry.value)).toList(),
           ],
@@ -245,4 +247,3 @@ class StatisticsScreen extends StatelessWidget {
     );
   }
 }
-

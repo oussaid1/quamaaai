@@ -11,6 +11,7 @@ class SettingsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final appState = Provider.of<AppState>(context);
+    final user = appState.user;
     
     return SingleChildScrollView(
       padding: const EdgeInsets.all(32.0),
@@ -20,13 +21,18 @@ class SettingsScreen extends StatelessWidget {
           Text(context.tr('settings'), style: Theme.of(context).textTheme.headlineMedium),
           const SizedBox(height: 32),
           
+          if (user != null) ...[
+            _buildUserInfo(user),
+            const SizedBox(height: 32),
+          ],
+          
           _buildPremiumSection(
             context,
-            title: 'Appearance',
+            title: context.tr('appearance'),
             icon: Icons.palette_outlined,
             children: [
               _buildSettingTile(
-                title: 'Theme Mode',
+                title: context.tr('theme_mode'),
                 subtitle: 'Customize how the app looks on your device',
                 trailing: DropdownButton<ThemeMode>(
                   value: appState.themeMode,
@@ -42,7 +48,7 @@ class SettingsScreen extends StatelessWidget {
                 ),
               ),
               _buildSettingTile(
-                title: 'Language',
+                title: context.tr('language'),
                 subtitle: 'Choose your preferred language',
                 trailing: DropdownButton<String>(
                   value: appState.locale.languageCode,
@@ -62,11 +68,11 @@ class SettingsScreen extends StatelessWidget {
           
           _buildPremiumSection(
             context,
-            title: 'Data Management',
+            title: context.tr('data_management'),
             icon: Icons.storage_outlined,
             children: [
               _buildSettingTile(
-                title: 'Export Data',
+                title: context.tr('export_data'),
                 subtitle: 'Copy all your data as JSON to clipboard',
                 onTap: () {
                   final data = appState.exportData();
@@ -78,33 +84,37 @@ class SettingsScreen extends StatelessWidget {
                 trailing: const Icon(Icons.copy_outlined, size: 20),
               ),
               _buildSettingTile(
-                title: 'Import Data',
+                title: context.tr('import_data'),
                 subtitle: 'Restore your records from clipboard JSON',
                 onTap: () async {
-                  final data = await Clipboard.getData(ClipboardData.mimeText);
+                  final data = await Clipboard.getData('text/plain');
                   if (data?.text != null) {
                     await appState.importData(data!.text!);
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Data imported successfully!')),
-                    );
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Data imported successfully!')),
+                      );
+                    }
                   } else {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('No data found in clipboard')),
-                    );
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('No data found in clipboard')),
+                      );
+                    }
                   }
                 },
                 trailing: const Icon(Icons.download_outlined, size: 20),
               ),
               _buildSettingTile(
-                title: 'Auto Inventory',
-                subtitle: 'Add to inventory on shopping purchase',
+                title: context.tr('automation'),
+                subtitle: context.tr('auto_add_desc'),
                 trailing: Switch(
                   value: appState.autoAddToInventory,
                   onChanged: (v) => appState.setAutoAddToInventory(v),
                 ),
               ),
               _buildSettingTile(
-                title: 'Monthly Income',
+                title: context.tr('monthly_income'),
                 subtitle: 'Set your monthly budget limit',
                 trailing: Text('\$${appState.monthlyIncome.toStringAsFixed(0)}', style: const TextStyle(fontWeight: FontWeight.bold, color: AppTheme.emerald)),
                 onTap: () => _showIncomeDialog(context, appState),
@@ -119,20 +129,58 @@ class SettingsScreen extends StatelessWidget {
             icon: Icons.person_outline,
             children: [
               _buildSettingTile(
-                title: 'Cloud Sync',
+                title: context.tr('cloud_sync'),
                 subtitle: 'Automatically back up data to the cloud',
-                trailing: Switch(value: false, onChanged: (v) {}),
+                trailing: Switch(value: user != null, onChanged: (v) {}),
               ),
               _buildSettingTile(
                 title: context.tr('logout'),
                 subtitle: 'Safely sign out of HomeHub',
                 textColor: AppTheme.rose,
-                onTap: () {},
+                onTap: () => appState.signOut(),
                 trailing: const Icon(Icons.logout, size: 20, color: AppTheme.rose),
               ),
             ],
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildUserInfo(dynamic user) {
+    return Card(
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: const BorderSide(color: AppTheme.border, width: 0.5),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(24.0),
+        child: Row(
+          children: [
+            CircleAvatar(
+              radius: 30,
+              backgroundImage: user.photoURL != null ? NetworkImage(user.photoURL!) : null,
+              child: user.photoURL == null ? const Icon(Icons.person, size: 30) : null,
+            ),
+            const SizedBox(width: 20),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    user.displayName ?? 'User',
+                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+                  ),
+                  Text(
+                    user.email ?? '',
+                    style: const TextStyle(color: AppTheme.textSecondary, fontSize: 14),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -187,25 +235,24 @@ class SettingsScreen extends StatelessWidget {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Edit Monthly Income'),
+        title: Text(context.tr('edit_monthly_income')),
         content: TextField(
           controller: controller,
-          decoration: const InputDecoration(labelText: 'Income Amount'),
+          decoration: InputDecoration(labelText: context.tr('income_amount')),
           keyboardType: TextInputType.number,
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+          TextButton(onPressed: () => Navigator.pop(context), child: Text(context.tr('cancel'))),
           ElevatedButton(
             onPressed: () {
               final val = double.tryParse(controller.text) ?? 5000.0;
               appState.setMonthlyIncome(val);
               Navigator.pop(context);
             },
-            child: const Text('Save'),
+            child: Text(context.tr('save')),
           ),
         ],
       ),
     );
   }
 }
-

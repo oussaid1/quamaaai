@@ -1,13 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'providers/app_state.dart';
 import 'theme/app_theme.dart';
 import 'screens/main_shell.dart';
+import 'screens/login_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  // TODO: Initialize Firebase here later
+  await Firebase.initializeApp();
   
   runApp(
     MultiProvider(
@@ -27,7 +29,7 @@ class QuamaaAiApp extends StatelessWidget {
     return Consumer<AppState>(
       builder: (context, appState, child) {
         return MaterialApp(
-          title: 'HomeHub',
+          title: 'QuamaaAi',
           debugShowCheckedModeBanner: false,
           theme: AppTheme.lightTheme,
           darkTheme: AppTheme.darkTheme,
@@ -42,7 +44,7 @@ class QuamaaAiApp extends StatelessWidget {
             GlobalWidgetsLocalizations.delegate,
             GlobalCupertinoLocalizations.delegate,
           ],
-          home: const MainShell(),
+          home: appState.user == null ? const LoginScreen() : const MainShell(),
         );
       },
     );
