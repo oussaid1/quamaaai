@@ -4,8 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'providers/app_state.dart';
 import 'theme/app_theme.dart';
-import 'screens/main_shell.dart';
-import 'screens/login_screen.dart';
+import 'screens/splash_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -44,7 +43,7 @@ class QuamaaAiApp extends StatelessWidget {
             GlobalWidgetsLocalizations.delegate,
             GlobalCupertinoLocalizations.delegate,
           ],
-          home: appState.user == null ? const LoginScreen() : const MainShell(),
+          home: const SplashScreen(),
         );
       },
     );
